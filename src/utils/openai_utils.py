@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from .db_utils import get_company_names, get_custom_text
-from .json_utils import format_company_name
+from .json_utils import format_company_name, format_po_details
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,48 +12,86 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def extract_company_name(text):
-    # text = 'PO#987654 2025-04-05 ShipTo:MCD Prim,456ElmSt,Springfield,IL62701 Item#12345 TORANI SYRUP VANILLA Qty:20 Price:22.15'
+    """
+    Extracts the company name from the given text using OpenAI's ChatCompletion API.
+    """
     company_names = get_company_names()
-    openai.api_key = os.getenv("OPENAI_API_KEY")
+    # print(f"Company names from DB: {company_names}")
+    prompt = (
+        f'''Which company (customer) gave this PO to TORANI? Give in JSON format: 
+        just the company name - "COMPANY_NAME". {text}. Map the company name to one of these names: {company_names}. 
+        "McDonald" or similar is "MCDONALD PRIMARY". 
+        If the company name is not in the list, return "UNKNOWN".'''
+    )
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f'''Which company (customer) gave this PO to TORANI? Give in json format 
-             just the company name - "COMPANY_NAME"{text}. Map the company name to one of these names: {company_names}. 
-             "Performance Foodservice" is "5 ETHAN SURRETT".
-             If the company name is not in the list, return "UNKNOWN". 
-             '''}
+            {"role": "system", "content": "You are a data entry expert."},
+            {"role": "user", "content": prompt}
         ],
         max_tokens=500,
         temperature=0.5,
     )
     company_name = response.choices[0].message['content'].strip()
     return format_company_name(company_name)
-    
-    
 
 def extract_po_details(pdf_text, company_name):
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    generic_text = '''Extract "PO_Number" and "PO_Date" (format MM/DD/YYYY) from the given text. Expected format - 
-    {
-        "PO_Number": ["po_number"],
-        "PO_Date": ["MM/DD/YYYY"]
-    }.
-    Check for multiple PO numbers and dates.'''
+    """
+    Extracts PO details (PO_Number and PO_Date) from the given text using OpenAI's ChatCompletion API.
+    """
+    generic_text = (
+        '''Extract "PO_Number" and "PO_Date" (format MM/DD/YYYY) from the given text. Expected format: 
+        {
+            "PO_Number": ["po_number"],
+            "PO_Date": ["MM/DD/YYYY"]
+        }. Check for multiple PO numbers and dates.'''
+    )
     custom_text = get_custom_text(company_name)
-    # print(f"Custom Text: {custom_text}")
+    # print(f"Custom text for {company_name}: {custom_text}")
     prompt = generic_text + custom_text if custom_text else generic_text
-    final_prompt = f'''We know that the company name is {company_name}. {prompt}TEXT STARTS HERE - {pdf_text}'''
-    # print(f"Final Prompt: {final_prompt}")
-    # print(f"Prompt: {prompt}")
+    final_prompt = f"We know that the company name is {company_name}. {prompt} TEXT STARTS HERE - {pdf_text}"
+    print(f"Final prompt for PO details: {final_prompt}")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f'''{final_prompt}'''}
+            {"role": "system", "content": "You are a data entry expert."},
+            {"role": "user", "content": final_prompt}
         ],
         max_tokens=500,
         temperature=0.5,
     )
-    return response.choices[0].message['content'].strip()
+    po_details = response.choices[0].message['content'].strip()
+    return format_po_details(po_details)
+
+def extract_line_items(pdf_text, company_name):
+    """
+    Extracts line items from the given text using OpenAI's ChatCompletion API.
+    """
+    generic_text = (
+        '''Extract "Line_Items" from the given text. Expected json format: 
+            "Line_Items": [
+                {
+                    "Product_Number": "product_number", (also called product code, item code, item number)
+                    "Product_Description": "product_description",
+                    "Quantity": "quantity",
+                    "Unit_Cost": "unit_cost",
+                    "Amount": "amount"
+                }
+            ]
+    Check for multiple line items.'''
+    )
+    custom_text = get_custom_text(company_name)
+    prompt = generic_text + (custom_text if custom_text else "")
+    final_prompt = f"We know that the company name is {company_name}. {prompt} TEXT STARTS HERE - {pdf_text}"
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a data entry expert."},
+            {"role": "user", "content": final_prompt}
+        ],
+        max_tokens=500,
+        temperature=0.5,
+    )
+    line_items = response.choices[0].message['content'].strip()
+    return line_items

@@ -8,17 +8,12 @@ def get_company_names():
     if connection is None:
         return []
 
-    cursor = connection.cursor()
-    cursor.execute("SELECT company_name FROM company")
-    rows = cursor.fetchall()
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT company_name FROM company")
+        rows = cursor.fetchall()
 
-    # Extract company names from the rows
-    company_names = [row[0] for row in rows]
-
-    cursor.close()
     connection.close()
-
-    return company_names
+    return [row[0] for row in rows]
 
 def get_custom_text(company_name):
     """
@@ -28,20 +23,11 @@ def get_custom_text(company_name):
     if connection is None:
         return None
 
-    cursor = connection.cursor()
-    cursor.execute("SELECT po_customization FROM company WHERE company_name = %s", (company_name,))
-    row = cursor.fetchone()
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT po_customization FROM company WHERE company_name = %s", (company_name,))
+        row = cursor.fetchone()
 
-    cursor.fetchall()
-    
-    cursor.close()
+        cursor.fetchall() 
+
     connection.close()
-
-    if row:
-        return row[0]
-    else:
-        return None
-    
-    
-# text = get_custom_text("5 ETHAN SURRETT")
-# print(text)
+    return row[0] if row else None
