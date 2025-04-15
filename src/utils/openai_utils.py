@@ -20,7 +20,6 @@ def extract_company_name(text):
     prompt = (
         f'''Which company (customer) gave this PO to TORANI? Give in JSON format: 
         just the company name - "COMPANY_NAME". {text}. Map the company name to one of these names: {company_names}. 
-        "McDonald" or similar is "MCDONALD PRIMARY". 
         If the company name is not in the list, return "UNKNOWN".'''
     )
     response = openai.ChatCompletion.create(
@@ -40,17 +39,18 @@ def extract_po_details(pdf_text, company_name):
     Extracts PO details (PO_Number and PO_Date) from the given text using OpenAI's ChatCompletion API.
     """
     generic_text = (
-        '''Extract "PO_Number" and "PO_Date" (format MM/DD/YYYY) from the given text. Expected format: 
+        '''Extract "PO_Number" and "PO_Date" (format MM/DD/YYYY) from the given text. Give the output in json format: 
         {
-            "PO_Number": ["po_number"],
-            "PO_Date": ["MM/DD/YYYY"]
-        }. Check for multiple PO numbers and dates.'''
+            "PO_Number": po_number,
+            "PO_Date": MM/DD/YYYY
+        }.'''
     )
     custom_text = get_custom_text(company_name)
     # print(f"Custom text for {company_name}: {custom_text}")
     prompt = generic_text + custom_text if custom_text else generic_text
     final_prompt = f"We know that the company name is {company_name}. {prompt} TEXT STARTS HERE - {pdf_text}"
     print(f"Final prompt for PO details: {final_prompt}")
+    # print(f"Final prompt for PO details: {final_prompt}")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -71,7 +71,7 @@ def extract_line_items(pdf_text, company_name):
         '''Extract "Line_Items" from the given text. Expected json format: 
             "Line_Items": [
                 {
-                    "Product_Number": "product_number", (also called product code, item code, item number)
+                    "Product_Number": "product_number", (also called product code, item code, item number, prod#, item#)
                     "Product_Description": "product_description",
                     "Quantity": "quantity",
                     "Unit_Cost": "unit_cost",
@@ -81,9 +81,10 @@ def extract_line_items(pdf_text, company_name):
     Check for multiple line items.'''
     )
     custom_text = get_custom_text(company_name)
-    prompt = generic_text + (custom_text if custom_text else "")
-    final_prompt = f"We know that the company name is {company_name}. {prompt} TEXT STARTS HERE - {pdf_text}"
-    
+    # print(f"Custom text for {company_name}: {custom_text}")
+    prompt = generic_text + custom_text if custom_text else generic_text
+    final_prompt = f"We know that the company name is {company_name}. {prompt}. TEXT STARTS HERE - {pdf_text}"
+    # print(f"Final prompt for line items: {final_prompt}")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[

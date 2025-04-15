@@ -11,6 +11,6 @@ def format_po_details(po_details):
     po_details = po_details.replace("```", "")
     po_details = po_details.replace('json', "")
     po_details = json.loads(po_details)
-    po_number = po_details.get("PO_Number", [])
-    po_date = po_details.get("PO_Date", [])
+    po_number = po_details.get("PO_Number")
+    po_date = po_details.get("PO_Date")
     return po_number, po_date
