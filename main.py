@@ -5,21 +5,39 @@ from src.utils.db_utils import insert_po_details
 from app import display_items, app
 import pandas as pd
 import streamlit as st
+from streamlit_pdf_viewer import pdf_viewer
+import os
 
 
 def get_file_name():
-    file_name = st.text_input("Enter the file name", value="keith-BEKPO125241-1.pdf")
-    return file_name
+    pdf_files = [f for f in os.listdir("pdf-data") if f.endswith(".pdf")]
+    file_name = st.selectbox("Select the file name", pdf_files, index=0)
+    
+    # Display the selected PDF file
+    pdf_path = f"pdf-data/{file_name}"
+    with open(pdf_path, "rb") as pdf_file:
+        pdf_data = pdf_file.read()
+        pdf_viewer(pdf_data, width=700, height=800)
 
+    return file_name
 
 def print_in_ui(line_items, po_number, po_dates, company_name):
     df_line_items = pd.DataFrame(line_items)
     df_line_items['PO Number'] = po_number
     df_line_items['PO Date'] = po_dates
     df_line_items['Company Name'] = company_name
-    df_line_items['Line Item'] = df_line_items.index + 1
-    df_line_items = df_line_items[['Company Name', 'PO Number', 'PO Date', 'Line Item'] + [col for col in df_line_items.columns if col not in ['Company Name', 'PO Number', 'PO Date', 'Line Item']]]
-    # print(f'{df_line_items}')
+    for item in line_items:
+        product_num = item[0]
+        product_description = item[1]
+        quantity = item[2]
+        unit_cost = item[3]    
+        amount = quantity * unit_cost
+    df_line_items['Product Number'] = product_num
+    df_line_items['Product Description'] = product_description
+    df_line_items['Quantity'] = quantity
+    df_line_items['Unit Cost'] = unit_cost
+    df_line_items['Amount'] = amount
+    df_line_items = df_line_items[['Company Name', 'PO Number', 'PO Date', 'Product Number', 'Product Description', 'Quantity', 'Unit Cost', 'Amount']]
 
     # Streamlit app to display the dataframe
     st.title("Purchase Order Details")

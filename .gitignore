@@ -1,4 +1,5 @@
 .env
 .env*
-pdf-samples/
+pdf-data/
 _pycache_
+*pycache*
