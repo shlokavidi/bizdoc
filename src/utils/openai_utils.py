@@ -38,7 +38,7 @@ def extract_po_details(pdf_text, company_name):
     Extracts PO details (PO_Number and PO_Date) from the given text using OpenAI's ChatCompletion API.
     """
     generic_text = (
-        '''Extract "PO_Number" and "PO_Date" from the given text. Give the output in json format: 
+        '''Extract "PO_Number" and "PO_Date" from the given text. The year can be only after 2000. Give the output in json format: 
         {
             "PO_Number": po_number,
             "PO_Date": MM/DD/YYYY (in datetime format %m%d%Y, not string)
@@ -54,7 +54,7 @@ def extract_po_details(pdf_text, company_name):
             {"role": "user", "content": final_prompt}
         ],
         max_tokens=100,
-        temperature=0.5,
+        temperature=0.1,
     )
     po_details = response.choices[0].message['content'].strip()
     return format_po_details(po_details)
@@ -83,8 +83,9 @@ def extract_line_items(pdf_text, company_name):
             {"role": "user", "content": final_prompt}
         ],
         max_tokens=3000,
-        temperature=0.5,
+        temperature=0.1,
     )
     line_items = response.choices[0].message['content'].strip()
+    print(f"Line items BEFORE FORMATTING: {line_items}")
     line_items  = format_line_items(line_items)
     return line_items

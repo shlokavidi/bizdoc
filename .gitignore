@@ -1,5 +1,5 @@
 .env
 .env*
 pdf-data/
-_pycache_
-*pycache*
+demo-data/
+__pycache__

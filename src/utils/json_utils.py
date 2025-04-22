@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+import re
 
 def format_company_name(company_name):
     company_name = company_name.replace("```", "")
@@ -14,12 +15,22 @@ def format_po_details(po_details):
     po_details = json.loads(po_details)
     po_number = po_details.get("PO_Number")
     po_date = po_details.get("PO_Date")
-    po_date = datetime.strptime(po_date, "%m/%d/%Y").date()
+    try:
+        # Try parsing with four-digit year
+        po_date = datetime.strptime(po_date, "%m/%d/%Y").date()
+    except ValueError:
+        # Fallback to two-digit year
+        po_date = datetime.strptime(po_date, "%m/%d/%y").date()    
     return po_number, po_date
 
 def format_line_items(line_items):
     line_items = line_items.replace("```", "")
     line_items = line_items.replace('json', "")
+    line_items = re.sub(r'"[Ll]ine[_ ]?[Ii]tems" ?: ?', '', line_items)
+    line_items = line_items.replace(']\n}', ']')
+    line_items = re.sub(r'\{\s*\[\s*', '[', line_items)
+    print("After replacing", line_items)
+    
     line_items = json.loads(line_items)
     
     formatted_items = []
