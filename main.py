@@ -1,8 +1,7 @@
 import json
 from src.utils.openai_utils import extract_company_name, extract_po_details, extract_line_items
-from src.utils.pdf_utils import extract_text_from_pdf
+from src.utils.pdf_utils import extract_text_from_image, convert_pdf_to_image, extract_text_from_pdf
 from src.utils.db_utils import insert_po_details
-from app import display_items, app
 import pandas as pd
 import streamlit as st
 from streamlit_pdf_viewer import pdf_viewer
@@ -46,15 +45,18 @@ def print_in_ui(file_name, line_items, po_number, po_dates, company_name):
         df_line_items['Amount'] = amount
         df_line_items = df_line_items[[ 'Product Number', 'Product Description', 'Quantity', 'Unit Cost', 'Amount']]
         st.dataframe(df_line_items)
+        
+        st.write("**Total Quantity:**", df_line_items['Quantity'].sum())
+        st.write("**Total Amount:**", df_line_items['Amount'].sum())
 
 
 file_name = get_file_name()
 pdf_path = f"demo-data/{file_name}"
+# pdf_path = "demo-data/ImperialDade.PDF"
 text = extract_text_from_pdf(pdf_path)
-print(text)
 company_name = extract_company_name(text)
 po_number, po_dates = extract_po_details(text, company_name)
 line_items = extract_line_items(text, company_name)
-print(line_items)
+insert_po_details(company_name, po_number, po_dates, line_items)
 
 print_in_ui(file_name, line_items, po_number, po_dates, company_name)

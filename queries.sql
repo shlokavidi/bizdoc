@@ -66,9 +66,20 @@ UPDATE bizdoc_db.company
 SET po_customization = 'Quantity is called "Ordered" - given in the FIRST column. Product Number is called "Item Code" - second column. Make sure to not miss the first entry'
 WHERE company_name = 'INTERNATIONAL CRUISE F&H SUPPLIERS';
 
+UPDATE bizdoc_db.company
+SET po_customization = 'Quantity is called "Order". Product Number is called "Item #".'
+WHERE company_name = 'MCDONALD PRIMARY';
+
+UPDATE bizdoc_db.company
+SET po_customization = 'Quantity is in the first column. Unit price is NOT the last column, it is mentioned right after product description'
+WHERE company_name = 'IMPERIAL DADE CITY OF INDUSTRY';
+
 select * from bizdoc_db.company where po_customization is not null;
 
 SELECT company_name
 FROM bizdoc_db.company
 GROUP BY company_name
 HAVING COUNT(company_name) > 1;
+
+select * from bizdoc_db.order_details;
+delete from bizdoc_db.order_details where company_name = 'INTERNATIONAL CRUISE F&H SUPPLIERS';
