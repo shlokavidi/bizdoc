@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 from streamlit_pdf_viewer import pdf_viewer
 import os
+import base64
 
 
 st.set_page_config(layout="wide")
@@ -15,39 +16,44 @@ def get_file_name():
     file_name = st.selectbox("Select the file name", pdf_files, index=0)
     return file_name
 
+
+def show_pdf(file_path):
+    with open(file_path, "rb") as f:
+        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
+
+
+
 def print_in_ui(file_name, line_items, po_number, po_dates, company_name):
     pdf_path = f"demo-data/{file_name}"
-    col1, col2 = st.columns([1, 1])
-    product_num = []
-    product_description = []
-    quantity = []
-    unit_cost = []
-    amount = []
-    with open(pdf_path, "rb") as pdf_file:
-        pdf_data = pdf_file.read()
-        with col1:
-            pdf_viewer(pdf_data, width=800, height=1000)
-    df_line_items = pd.DataFrame(line_items)
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.write("### PDF Preview")
+        show_pdf(pdf_path)
+        with open(pdf_path, "rb") as pdf_file:
+            st.download_button(
+                label="Download PDF",
+                data=pdf_file,
+                file_name=file_name,
+                mime="application/pdf"
+            )
+
     with col2:
         st.write(f"**Company Name:** {company_name}")
         st.write(f"**PO Number:** {po_number}")
         st.write(f"**PO Date:** {po_dates}")
-        for item in line_items:
-            product_num.append(item[0])
-            product_description.append(item[1])
-            quantity.append(item[2])
-            unit_cost.append(item[3])   
-            amount.append(item[2] * item[3])
-        df_line_items['Product Number'] = product_num
-        df_line_items['Product Description'] = product_description
-        df_line_items['Quantity'] = quantity
-        df_line_items['Unit Cost'] = unit_cost
-        df_line_items['Amount'] = amount
-        df_line_items = df_line_items[[ 'Product Number', 'Product Description', 'Quantity', 'Unit Cost', 'Amount']]
-        st.dataframe(df_line_items)
-        
-        st.write("**Total Quantity:**", df_line_items['Quantity'].sum())
-        st.write("**Total Amount:**", df_line_items['Amount'].sum())
+
+        # Prepare DataFrame
+        df_line_items = pd.DataFrame(line_items, columns=['Product Number', 'Product Description', 'Quantity', 'Unit Cost'])
+        if not df_line_items.empty:
+            df_line_items['Amount'] = df_line_items['Quantity'] * df_line_items['Unit Cost']
+            st.dataframe(df_line_items)
+            st.write("**Total Quantity:**", df_line_items['Quantity'].sum())
+            st.write("**Total Amount:**", df_line_items['Amount'].sum())
+        else:
+            st.write("No line items found.")
 
 
 file_name = get_file_name()
