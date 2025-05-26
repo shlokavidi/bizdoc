@@ -24,12 +24,12 @@ def format_po_details(po_details):
     return po_number, po_date
 
 def format_line_items(line_items):
-    line_items = line_items.replace("```", "")
-    line_items = line_items.replace('json', "")
-    line_items = re.sub(r'"[Ll]ine[_ ]?[Ii]tems" ?: ?', '', line_items)
-    line_items = line_items.replace(']\n}', ']')
-    line_items = re.sub(r'\{\s*\[\s*', '[', line_items)
-    print("After replacing", line_items)
+    # line_items = line_items.replace("```", "")
+    # line_items = line_items.replace('json', "")
+    # line_items = re.sub(r'"[Ll]ine[_ ]?[Ii]tems" ?: ?', '', line_items)
+    # line_items = line_items.replace(']\n}', ']')
+    # line_items = re.sub(r'\{\s*\[\s*', '[', line_items)
+    # print("After replacing", line_items)
     
     line_items = json.loads(line_items)
     

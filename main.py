@@ -2,11 +2,13 @@ import json
 from src.utils.openai_utils import extract_company_name, extract_po_details, extract_line_items
 from src.utils.pdf_utils import extract_text_from_image, convert_pdf_to_image, extract_text_from_pdf
 from src.utils.db_utils import insert_po_details
+from src.utils.gemini_utils import extract_po_data_gemini, extract_line_items_gemini
 import pandas as pd
 import streamlit as st
 from streamlit_pdf_viewer import pdf_viewer
 import os
 import base64
+from dotenv import load_dotenv
 
 
 st.set_page_config(layout="wide")
@@ -25,7 +27,7 @@ def show_pdf(file_path):
 
 
 
-def print_in_ui(file_name, line_items, po_number, po_dates, company_name):
+def print_in_ui(file_name, line_items, po_number, po_dates, company_name, pickup):
     pdf_path = f"demo-data/{file_name}"
     col1, col2 = st.columns(2)
 
@@ -44,6 +46,7 @@ def print_in_ui(file_name, line_items, po_number, po_dates, company_name):
         st.write(f"**Company Name:** {company_name}")
         st.write(f"**PO Number:** {po_number}")
         st.write(f"**PO Date:** {po_dates}")
+        st.write(f"**Pickup Address:** {pickup}")
 
         # Prepare DataFrame
         df_line_items = pd.DataFrame(line_items, columns=['Product Number', 'Product Description', 'Quantity', 'Unit Cost'])
@@ -56,13 +59,17 @@ def print_in_ui(file_name, line_items, po_number, po_dates, company_name):
             st.write("No line items found.")
 
 
+load_dotenv()
 file_name = get_file_name()
-pdf_path = f"demo-data/{file_name}"
+path = os.getenv("APP_HOME_DIR", ".")
+pdf_path = f"{path}/{file_name}"
 # pdf_path = "demo-data/ImperialDade.PDF"
-text = extract_text_from_pdf(pdf_path)
-company_name = extract_company_name(text)
-po_number, po_dates = extract_po_details(text, company_name)
-line_items = extract_line_items(text, company_name)
-insert_po_details(company_name, po_number, po_dates, line_items)
+# text = extract_text_from_pdf(pdf_path)
+# company_name = extract_company_name(text)
+# po_number, po_dates = extract_po_details(text, company_name)
+po_details = extract_po_data_gemini(pdf_path)
+# line_items = extract_line_items(text, company_name)
+line_items = extract_line_items_gemini(pdf_path)
+# insert_po_details(company_name, po_number, po_dates, line_items)
 
-print_in_ui(file_name, line_items, po_number, po_dates, company_name)
+print_in_ui(file_name, line_items, po_details.get('po_number'), po_details.get('po_date'), po_details.get('customer_name', 'UNKNOWN'), po_details.get('pickup'))
